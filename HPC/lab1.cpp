@@ -3,34 +3,31 @@
 #include <queue>
 #include <stack>
 #include <chrono>
+#include <vector>
+
 using namespace std;
 using namespace std::chrono;
 
-class Node
-{
+class Node {
 public:
     int value;
     Node *left;
     Node *right;
-    Node()
-    {
+    Node() {
         // Required empty constructor.
     }
-    Node(int value)
-    {
+    Node(int value) {
         this->value = value;
         this->left = NULL;
         this->right = NULL;
     }
 };
 
-Node *generateTree(int values[], int length)
-{
+Node *generateTree(int values[], int length) {
     if (length == 0)
         return NULL;
     Node *treeNodes[length];
-    for (int i = 0; i < length; i++)
-    {
+    for (int i = 0; i < length; i++) {
         if (values[i] != -1)
             treeNodes[i] = new Node(values[i]);
         else
@@ -38,10 +35,8 @@ Node *generateTree(int values[], int length)
     }
     int parent = 0;
     int child = 1;
-    while (child < length)
-    {
-        if (treeNodes[parent] != NULL)
-        {
+    while (child < length) {
+        if (treeNodes[parent] != NULL) {
             treeNodes[parent]->left = treeNodes[child++];
             if (child < length)
                 treeNodes[parent]->right = treeNodes[child++];
@@ -52,41 +47,59 @@ Node *generateTree(int values[], int length)
     return root;
 }
 
-void bfs(Node *root)
-{
+void parallel_bfs(Node *root) {
     if (root == NULL)
         return;
     queue<Node *> q;
     q.push(root);
-    while (!q.empty())
-    {
-        Node *node = q.front();
-        q.pop();
-        cout << node->value << " -> ";
-        if (node->left != NULL)
-            q.push(node->left);
-        if (node->right != NULL)
-            q.push(node->right);
+
+    while (!q.empty()) {
+        int level_size = q.size();
+        vector<Node *> current_level;
+
+        // Extract current level
+        for (int i = 0; i < level_size; i++) {
+            Node *node = q.front();
+            q.pop();
+            cout << node->value << " -> ";
+            current_level.push_back(node);
+        }
+
+        vector<Node *> next_level;
+
+        // Parallelize over current level nodes
+        #pragma omp parallel for
+        for (int i = 0; i < current_level.size(); i++) {
+            Node *node = current_level[i];
+            #pragma omp critical
+            {
+                if (node->left != NULL)
+                    next_level.push_back(node->left);
+                if (node->right != NULL)
+                    next_level.push_back(node->right);
+            }
+        }
+
+        for (Node *node : next_level)
+            q.push(node);
     }
 }
 
-void dfs(Node *root)
-{
+void dfs(Node *root) {
     if (root == NULL)
         return;
-#pragma omp critical
+    #pragma omp critical
     cout << root->value << " -> ";
-#pragma omp parallel sections num_threads(2)
+    #pragma omp parallel sections num_threads(2)
     {
-#pragma omp section
+        #pragma omp section
         dfs(root->left);
-#pragma omp section
+        #pragma omp section
         dfs(root->right);
     }
 }
 
-int main()
-{
+int main() {
     int values[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     int length = sizeof(values) / sizeof(int); // Calculate the length of array.
     Node *root = generateTree(values, length); // Generate the binary tree.
@@ -94,7 +107,7 @@ int main()
     // Measure execution time for BFS
     auto start_bfs = high_resolution_clock::now();
     cout << "BFS: ";
-    bfs(root);
+    parallel_bfs(root);
     auto stop_bfs = high_resolution_clock::now();
     auto duration_bfs = duration_cast<microseconds>(stop_bfs - start_bfs);
     cout << "\nExecution time for BFS: " << duration_bfs.count() << " microseconds" << endl;
