@@ -149,13 +149,13 @@ int main()
     int length4 = sizeof(nums4) / sizeof(int);
 
     cout << "\nMerge Sort:" << endl;
-    displayArray("Before", nums2, length2);
+    displayArray("Before", nums3, length3);
 
     auto start_merge = high_resolution_clock::now();
     mergeSort(nums3, 0, length3 - 1);
     auto end_merge = high_resolution_clock::now();
 
-    displayArray("After", nums2, length2);
+    displayArray("After", nums3, length3);
     auto duration_merge = duration_cast<microseconds>(end_merge - start_merge);
     cout << "\nExecution time for Merge Sort: " << duration_merge.count() << " microseconds" << endl;
 
