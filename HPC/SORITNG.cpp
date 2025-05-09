@@ -64,6 +64,21 @@ void mergeSort(int nums[], int start, int end)
         merge(nums, start, mid, mid + 1, end);
     }
 }
+void seq_mergeSort(int nums[], int start, int end)
+{
+    if (start < end)
+    {
+        int mid = (start + end) / 2;
+
+        {
+
+            seq_mergeSort(nums, start, mid);
+
+            seq_mergeSort(nums, mid + 1, end);
+        }
+        merge(nums, start, mid, mid + 1, end);
+    }
+}
 
 void bubbleSort(int nums[], int length)
 {
@@ -82,12 +97,31 @@ void bubbleSort(int nums[], int length)
         }
     }
 }
+void seq_bubbleSort(int nums[], int length)
+{
+    for (int i = 0; i < length; i++)
+    {
+        int start = i % 2; // Start from 0 if i is even else 1
+
+        for (int j = start; j < length - 1; j += 2)
+        {
+            if (nums[j] > nums[j + 1])
+            {
+                int temp = nums[j];
+                nums[j] = nums[j + 1];
+                nums[j + 1] = temp;
+            }
+        }
+    }
+}
 
 int main()
 {
     // Bubble Sort Example
     int nums1[] = {4, 6, 2, 0, 7, 6, 1, 9, -3, -5};
     int length1 = sizeof(nums1) / sizeof(int);
+    int nums2[] = {4, 6, 2, 0, 7, 6, 1, 9, -3, -5};
+    int length2 = sizeof(nums2) / sizeof(int);
 
     cout << "Bubble Sort:" << endl;
     displayArray("Before", nums1, length1);
@@ -100,20 +134,38 @@ int main()
     auto duration_bubble = duration_cast<microseconds>(end_bubble - start_bubble);
     cout << "\nExecution time for Bubble Sort: " << duration_bubble.count() << " microseconds" << endl;
 
+    auto start_bubble_seq = high_resolution_clock::now();
+    seq_bubbleSort(nums2, length2);
+    auto end_bubble_seq = high_resolution_clock::now();
+
+    //displayArray("After", nums1, length1);
+    auto duration_bubble_seq = duration_cast<microseconds>(end_bubble_seq - start_bubble_seq);
+    cout << "\nExecution time for Sequential Bubble Sort: " << duration_bubble_seq.count() << " microseconds" << endl;
+
     // Merge Sort Example
-    int nums2[] = {3, 5, 1, -1, 6, 5, 0, 8, -2, -4};
-    int length2 = sizeof(nums2) / sizeof(int);
+    int nums3[] = {3, 5, 1, -1, 6, 5, 0, 8, -2, -4};
+    int length3 = sizeof(nums3) / sizeof(int);
+    int nums4[] = {3, 5, 1, -1, 6, 5, 0, 8, -2, -4};
+    int length4 = sizeof(nums4) / sizeof(int);
 
     cout << "\nMerge Sort:" << endl;
-    displayArray("Before", nums2, length2);
+    displayArray("Before", nums3, length3);
 
     auto start_merge = high_resolution_clock::now();
-    mergeSort(nums2, 0, length2 - 1);
+    mergeSort(nums3, 0, length3 - 1);
     auto end_merge = high_resolution_clock::now();
 
-    displayArray("After", nums2, length2);
+    displayArray("After", nums3, length3);
     auto duration_merge = duration_cast<microseconds>(end_merge - start_merge);
     cout << "\nExecution time for Merge Sort: " << duration_merge.count() << " microseconds" << endl;
+
+    auto start_merge_seq = high_resolution_clock::now();
+    seq_mergeSort(nums4, 0, length4 - 1);
+    auto end_merge_seq = high_resolution_clock::now();
+
+   // displayArray("After", nums2, length2);
+    auto duration_merge_seq = duration_cast<microseconds>(end_merge_seq - start_merge_seq);
+    cout << "\nExecution time for Sequential Merge Sort: " << duration_merge_seq.count() << " microseconds" << endl;
 
     return 0;
 }
