@@ -72,9 +72,9 @@ void seq_mergeSort(int nums[], int start, int end)
 
         {
 
-            mergeSort(nums, start, mid);
+            seq_mergeSort(nums, start, mid);
 
-            mergeSort(nums, mid + 1, end);
+            seq_mergeSort(nums, mid + 1, end);
         }
         merge(nums, start, mid, mid + 1, end);
     }
@@ -121,7 +121,7 @@ int main()
     int nums1[] = {4, 6, 2, 0, 7, 6, 1, 9, -3, -5};
     int length1 = sizeof(nums1) / sizeof(int);
     int nums2[] = {4, 6, 2, 0, 7, 6, 1, 9, -3, -5};
-    int length2 = sizeof(nums1) / sizeof(int);
+    int length2 = sizeof(nums2) / sizeof(int);
 
     cout << "Bubble Sort:" << endl;
     displayArray("Before", nums1, length1);
@@ -144,9 +144,9 @@ int main()
 
     // Merge Sort Example
     int nums3[] = {3, 5, 1, -1, 6, 5, 0, 8, -2, -4};
-    int length3 = sizeof(nums2) / sizeof(int);
+    int length3 = sizeof(nums3) / sizeof(int);
     int nums4[] = {3, 5, 1, -1, 6, 5, 0, 8, -2, -4};
-    int length4 = sizeof(nums2) / sizeof(int);
+    int length4 = sizeof(nums4) / sizeof(int);
 
     cout << "\nMerge Sort:" << endl;
     displayArray("Before", nums2, length2);
