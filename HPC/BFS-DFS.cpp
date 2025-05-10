@@ -100,7 +100,7 @@ void dfs(Node *root) {
 }
 
 int main() {
-    int values[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+    int values[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,34,32,45,67,89,42,66,23,43,87,21,45,67,88,99,64,30,65,76,87,98,92,93,94,95,96,97};
     int length = sizeof(values) / sizeof(int); // Calculate the length of array.
     Node *root = generateTree(values, length); // Generate the binary tree.
 
