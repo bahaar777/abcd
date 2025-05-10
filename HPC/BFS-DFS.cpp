@@ -1,124 +1,145 @@
-#include <omp.h>
 #include <iostream>
+#include <vector>
 #include <queue>
 #include <stack>
-#include <chrono>
-#include <vector>
+#include <omp.h>
 
 using namespace std;
-using namespace std::chrono;
 
-class Node {
-public:
-    int value;
-    Node *left;
-    Node *right;
-    Node() {
-        // Required empty constructor.
-    }
-    Node(int value) {
-        this->value = value;
-        this->left = NULL;
-        this->right = NULL;
-    }
-};
+const int MAXN = 100005;
+vector<int> adj[MAXN];
+bool visited[MAXN];
 
-Node *generateTree(int values[], int length) {
-    if (length == 0)
-        return NULL;
-    Node *treeNodes[length];
-    for (int i = 0; i < length; i++) {
-        if (values[i] != -1)
-            treeNodes[i] = new Node(values[i]);
-        else
-            treeNodes[i] = NULL;
-    }
-    int parent = 0;
-    int child = 1;
-    while (child < length) {
-        if (treeNodes[parent] != NULL) {
-            treeNodes[parent]->left = treeNodes[child++];
-            if (child < length)
-                treeNodes[parent]->right = treeNodes[child++];
-        }
-        parent++;
-    }
-    Node *root = treeNodes[0];
-    return root;
-}
-
-void parallel_bfs(Node *root) {
-    if (root == NULL)
-        return;
-    queue<Node *> q;
-    q.push(root);
+void parallel_bfs(int start) {
+    queue<int> q;
+    q.push(start);
+    visited[start] = true;
 
     while (!q.empty()) {
         int level_size = q.size();
-        vector<Node *> current_level;
+        vector<int> current_level;
 
         // Extract current level
         for (int i = 0; i < level_size; i++) {
-            Node *node = q.front();
+            int v = q.front();
             q.pop();
-            cout << node->value << " -> ";
-            current_level.push_back(node);
+            cout << v << " ";
+            current_level.push_back(v);
         }
 
-        vector<Node *> next_level;
+        vector<int> next_level;
 
         // Parallelize over current level nodes
         #pragma omp parallel for
         for (int i = 0; i < current_level.size(); i++) {
-            Node *node = current_level[i];
-            #pragma omp critical
-            {
-                if (node->left != NULL)
-                    next_level.push_back(node->left);
-                if (node->right != NULL)
-                    next_level.push_back(node->right);
+            int v = current_level[i];
+            for (int u : adj[v]) {
+                // Critical section to avoid race on visited and next_level
+                #pragma omp critical
+                {
+                    if (!visited[u]) {
+                        visited[u] = true;
+                        next_level.push_back(u);
+                    }
+                }
             }
         }
 
-        for (Node *node : next_level)
-            q.push(node);
+        for (int u : next_level)
+            q.push(u);
     }
 }
 
-void dfs(Node *root) {
-    if (root == NULL)
-        return;
-    #pragma omp critical
-    cout << root->value << " -> ";
-    #pragma omp parallel sections num_threads(2)
-    {
-        #pragma omp section
-        dfs(root->left);
-        #pragma omp section
-        dfs(root->right);
+void parallel_dfs(int start) {
+    stack<int> s;
+    s.push(start);
+    visited[start] = true;
+
+    while (!s.empty()) {
+        int v = s.top();
+        s.pop();
+        cout << v << " ";
+
+        vector<int> neighbors;
+
+        // Collect unvisited neighbors
+        #pragma omp parallel for
+        for (int i = 0; i < adj[v].size(); i++) {
+            int u = adj[v][i];
+            bool needs_push = false;
+
+            #pragma omp critical
+            {
+                if (!visited[u]) {
+                    visited[u] = true;
+                    needs_push = true;
+                }
+            }
+
+            if (needs_push) {
+                #pragma omp critical
+                neighbors.push_back(u);
+            }
+        }
+
+        for (int u : neighbors)
+            s.push(u);
     }
+}
+
+void reset_visited(int n) {
+    for (int i = 1; i <= n; i++)
+        visited[i] = false;
 }
 
 int main() {
-    int values[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-    int length = sizeof(values) / sizeof(int); // Calculate the length of array.
-    Node *root = generateTree(values, length); // Generate the binary tree.
+    int n, m;
+    cout << "Enter number of nodes and edges: ";
+    cin >> n >> m;
 
-    // Measure execution time for BFS
-    auto start_bfs = high_resolution_clock::now();
-    cout << "BFS: ";
-    parallel_bfs(root);
-    auto stop_bfs = high_resolution_clock::now();
-    auto duration_bfs = duration_cast<microseconds>(stop_bfs - start_bfs);
-    cout << "\nExecution time for BFS: " << duration_bfs.count() << " microseconds" << endl;
+    if (m > n * (n - 1) / 2) {
+        cout << "Error: Too many edges.\n";
+        return 1;
+    }
 
-    // Measure execution time for DFS
-    auto start_dfs = high_resolution_clock::now();
-    cout << "DFS: ";
-    dfs(root);
-    auto stop_dfs = high_resolution_clock::now();
-    auto duration_dfs = duration_cast<microseconds>(stop_dfs - start_dfs);
-    cout << "\nExecution time for DFS: " << duration_dfs.count() << " microseconds" << endl;
+    cout << "Enter edges:\n";
+    for (int i = 0; i < m; i++) {
+        int u, v;
+        cin >> u >> v;
+        adj[u].push_back(v);
+        adj[v].push_back(u); // Undirected graph
+    }
+
+    while (true) {
+        cout << "\nChoose an option:\n1. Parallel BFS\n2. Parallel DFS\n3. Exit\nEnter your choice: ";
+        int choice;
+        cin >> choice;
+        if (choice == 3) break;
+
+        cout << "Enter starting node: ";
+        int start;
+        cin >> start;
+
+        reset_visited(n);
+        if (choice == 1) {
+            cout << "Running Parallel BFS...\nVisited nodes: ";
+            parallel_bfs(start);
+        } else if (choice == 2) {
+            cout << "Running Parallel DFS...\nVisited nodes: ";
+            parallel_dfs(start);
+        }
+
+        for (int i = 1; i <= n; i++) {
+            if (!visited[i] && !adj[i].empty()) {
+                cout << "\nGraph has disconnected components. Running again from node: " << i << endl;
+                if (choice == 1)
+                    parallel_bfs(i);
+                else
+                    parallel_dfs(i);
+            }
+        }
+        cout << endl;
+    }
 
     return 0;
 }
